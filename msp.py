@@ -81,7 +81,7 @@ class msptypes():
     ENCAPSULATED_MSP_FRAME_LEN              = 8
 
     # ELRS backpack protocol opcodes
-    # See: https:#docs.google.com/document/d/1u3c7OTiO4sFL2snI-hIo-uRSLfgBK4h16UrbA08Pd6U/edit#heading=h.1xw7en7jmvsj
+    # See: https://docs.google.com/document/d/1u3c7OTiO4sFL2snI-hIo-uRSLfgBK4h16UrbA08Pd6U/edit#heading=h.1xw7en7jmvsj
 
     # outgoing, packets originating from the backpack or forwarded from the TX backpack to the VRx
     MSP_ELRS_BACKPACK_GET_CHANNEL_INDEX     = 0x0300
@@ -99,6 +99,7 @@ class msptypes():
     MSP_ELRS_BACKPACK_SET_OSD_ELEMENT       = 0x030C
     MSP_ELRS_BACKPACK_SET_HEAD_TRACKING     = 0x030D  # enable/disable head-tracking forwarding packets to the TX
     MSP_ELRS_BACKPACK_SET_RTC               = 0x030E
+    MSP_SET_NAME                            = 11
 
     # incoming, packets originating from the VRx
     MSP_ELRS_BACKPACK_SET_MODE              = 0x0380  # enable wifi/binding mode
