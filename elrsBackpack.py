@@ -527,7 +527,7 @@ class elrsBackpack(VRxController):
                     time.sleep(1)
                 self.send_msg(self._announcement_row, start_col2, race_name, hardwareType)
             self.send_display()
-            self.clear_sendUID(hardwareType)
+            self.clear_sendUID()
             self._queue_lock.release()
 
         with self._queue_lock:
@@ -636,6 +636,8 @@ class elrsBackpack(VRxController):
         def lap_results(result, gap_info):
             pilot_id = result['pilot_id']
 
+            hardwareType = self._heat_data[pilot_id]['hardware_type']
+
             self._queue_lock.acquire()
             if not self._gap_mode or len(self._heat_data) == 1:
                 formatted_time = RHUtils.time_format(gap_info.current.last_lap_time, '{m}:{s}.{d}')
@@ -646,10 +648,10 @@ class elrsBackpack(VRxController):
                 message = f"x {formatted_callsign} | +{formatted_time} w"
             else:
                 message = self._leader_message
-            start_col = self.centerOSD(len(message), self._heat_data[pilot_id]['hardware_type'])
+            start_col = self.centerOSD(len(message), hardwareType)
         
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            self.send_msg(self._lapresults_row, start_col, message)
+            self.send_msg(self._lapresults_row, start_col, message, hardwareType)
             self.send_display()
             self.clear_sendUID()
             delay = copy.copy(self._results_uptime)
@@ -659,7 +661,7 @@ class elrsBackpack(VRxController):
 
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            self.send_clear_row(self._lapresults_row, self._heat_data[pilot_id]['hardware_type'])
+            self.send_clear_row(self._lapresults_row, hardwareType)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
