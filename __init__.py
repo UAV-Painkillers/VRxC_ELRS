@@ -73,22 +73,22 @@ def initialize(rhapi):
     # Text Fields
     #
 
-    _racestage_message = UIField('_racestage_message', 'Race Stage Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value="w ARM NOW x")
+    _racestage_message = UIField('_racestage_message', 'Race Stage Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value=">> ARM NOW <<")
     rhapi.fields.register_option(_racestage_message, 'elrs_vrxc')
 
-    _racestart_message = UIField('_racestart_message', 'Race Start Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value="w   GO!   x")
+    _racestart_message = UIField('_racestart_message', 'Race Start Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value=">>   GO!   <<")
     rhapi.fields.register_option(_racestart_message, 'elrs_vrxc')
 
-    _pilotdone_message = UIField('_pilotdone_message', 'Pilot Done Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value="w FINISHED! x")
+    _pilotdone_message = UIField('_pilotdone_message', 'Pilot Done Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value=">> FINISHED! <<")
     rhapi.fields.register_option(_pilotdone_message, 'elrs_vrxc')
 
-    _racefinish_message = UIField('_racefinish_message', 'Race Finish Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value="w FINISH LAP! x")
+    _racefinish_message = UIField('_racefinish_message', 'Race Finish Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value=">> FINISH LAP! <<")
     rhapi.fields.register_option(_racefinish_message, 'elrs_vrxc')
 
-    _racestop_message = UIField('_racestop_message', 'Race Stop Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value="w  LAND NOW!  x")
+    _racestop_message = UIField('_racestop_message', 'Race Stop Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value=">>  LAND NOW!  <<")
     rhapi.fields.register_option(_racestop_message, 'elrs_vrxc')
 
-    _leader_message = UIField('_leader_message', 'Race Leader Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value="x RACE LEADER w")
+    _leader_message = UIField('_leader_message', 'Race Leader Message', desc='lowercase letters are symbols', field_type = UIFieldType.TEXT, value=">> RACE LEADER <<")
     rhapi.fields.register_option(_leader_message, 'elrs_vrxc')
 
     #

@@ -298,7 +298,7 @@ class elrsBackpack(VRxController):
         message.set_function(msptypes.MSP_ELRS_SET_SEND_UID)
         message.set_payload([1] + bindingHash)
         self.send_msp(message.get_msp())
-        self._activePilotIdentifier = bindingHash
+        self._activePilotIdentifier = '.'.join(map(str, bindingHash))
 
     def clear_sendUID(self):
         message = msp_message()
@@ -310,11 +310,12 @@ class elrsBackpack(VRxController):
 
     def send_clear(self, hardwaretype, displayLastPersistentMessage = True):
         if hardwaretype == 'msp_osd':
-            if displayLastPersistentMessage and self._last_persistent_msp_osd_message[self._activePilotIdentifier]:
-                self.send_msg(0, 0, self._last_persistent_msp_osd_message[self._activePilotIdentifier], hardwaretype)
+            persistentMessageToRecover = self._last_persistent_msp_osd_message.get(self._activePilotIdentifier)
+            if displayLastPersistentMessage and persistentMessageToRecover:
+                self.send_msg(0, 0, persistentMessageToRecover, hardwaretype, False)
                 return
 
-            self.send_msg(0, 0, '    ', hardwaretype)
+            self.send_msg(0, 0, '    ', hardwaretype, False)
             return
 
         message = msp_message()
@@ -337,26 +338,38 @@ class elrsBackpack(VRxController):
                 self.send_clear_status(hardwareType)
 
         col = self.centerOSD(len(str), hardwareType)
-        self.send_msg(self._status_row, col, str, hardwareType)
+        self.send_msg(self._status_row, col, str, hardwareType, persistent)
 
     def send_currentlap(self, str, hardwareType, persistent = False):
         if hardwareType != 'msp_osd':
             self.send_clear_currentlap(hardwareType)
 
         col = self.centerOSD(len(str), hardwareType)
-        self.send_msg(self._currentlap_row, col, str, hardwareType)
+        self.send_msg(self._currentlap_row, col, str, hardwareType, persistent)
 
     def send_lapresults(self, str, hardwareType, persistent = False):
         if hardwareType != 'msp_osd':
             self.send_clear_lapresults(hardwareType)
 
         col = self.centerOSD(len(str), hardwareType)
-        self.send_msg(self._lapresults_row, col, str, hardwareType)
+        self.send_msg(self._lapresults_row, col, str, hardwareType, persistent)
 
     def send_msg(self, row, col, str, hardwaretype, persistent):
         payload = [1]
         if hardwaretype != 'msp_osd':
             payload = [0x03,row,col,0]
+            str = str.replace('>>', 'x')
+            str = str.replace('<<', 'w')
+        elif len(str) > 16:
+            str = str.replace('>>', '')
+            str = str.replace('<<', '')
+
+        str = str.strip()
+
+        if hardwaretype == 'msp_osd' and len(str) < 16:
+            # if the string is shorter than 16 characters, center it by prepending spaces
+            spacesToAdd = int((16 - len(str)) / 2)
+            str = (' ' * spacesToAdd) + str
 
         # add every character using the ord() function to payload
         # if hardwareType == msp_osd, then only upto 16 characters can be sent
@@ -369,7 +382,7 @@ class elrsBackpack(VRxController):
         message = msp_message()
 
         if hardwaretype == 'msp_osd':
-            message.set_function(msptypes.MSP_SET_NAME)
+            message.set_function(msptypes.MSP_ELRS_SET_NAME)
         else:
             message.set_function(msptypes.MSP_ELRS_SET_OSD)
 
@@ -378,8 +391,9 @@ class elrsBackpack(VRxController):
         self.send_msp(mspString)
 
         if hardwaretype == 'msp_osd' and len(str) > 16:
-            time.sleep(1)
-            self.send_msg(row, col, str[16:], hardwaretype)
+            # if the string is longer than 16 characters, make it scroll
+            time.sleep(0.4)
+            self.send_msg(row, col, str[1:], hardwaretype, False)
 
         if persistent:
             self._last_persistent_msp_osd_message[self._activePilotIdentifier] = str
@@ -445,7 +459,7 @@ class elrsBackpack(VRxController):
             message = 'ROTORHAZARD'
             self._queue_lock.acquire()
             #self.send_clear('msp_osd')
-            self.send_msg(0, 0, message, 'msp_osd')
+            self.send_msg(0, 0, message, 'msp_osd', False)
             #self.send_display()
             self._queue_lock.release()
 
@@ -687,11 +701,11 @@ class elrsBackpack(VRxController):
             self._queue_lock.acquire()
             if not self._gap_mode or len(self._heat_data) == 1:
                 formatted_time = RHUtils.time_format(gap_info.current.last_lap_time, '{m}:{s}.{d}')
-                message = f"x LAP {gap_info.current.lap_number} | {formatted_time} w"
+                message = f">> LAP {gap_info.current.lap_number} | {formatted_time} <<"
             elif gap_info.next_rank.position:
                 formatted_time = RHUtils.time_format(gap_info.next_rank.diff_time, '{m}:{s}.{d}')
                 formatted_callsign = str.upper(gap_info.next_rank.callsign)
-                message = f"x {formatted_callsign} | +{formatted_time} w"
+                message = f">> {formatted_callsign} | +{formatted_time} <<"
             else:
                 message = self._leader_message
         
@@ -763,34 +777,34 @@ class elrsBackpack(VRxController):
             self.send_status(self._pilotdone_message, hardwareType)
 
             if self._results_mode:
-                self.send_msg(10, 11, "PLACEMENT:", hardwareType)
+                self.send_msg(10, 11, "PLACEMENT:", hardwareType, False)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(10, 30, str(result['position']), hardwareType)
+                self.send_msg(10, 30, str(result['position']), hardwareType, False)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(11, 11, "LAPS COMPLETED:", hardwareType)
+                self.send_msg(11, 11, "LAPS COMPLETED:", hardwareType, False)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(11, 30, str(result['laps']), hardwareType)
+                self.send_msg(11, 30, str(result['laps']), hardwareType, False)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(12, 11, "FASTEST LAP:", hardwareType)
+                self.send_msg(12, 11, "FASTEST LAP:", hardwareType, False)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(12, 30, result['fastest_lap'], hardwareType)
+                self.send_msg(12, 30, result['fastest_lap'], hardwareType, False)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(13, 11, "FASTEST " + str(result['consecutives_base']) +  " CONSEC:", hardwareType)
+                self.send_msg(13, 11, "FASTEST " + str(result['consecutives_base']) +  " CONSEC:", hardwareType, False)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(13, 30, result['consecutives'], hardwareType)
+                self.send_msg(13, 30, result['consecutives'], hardwareType, False)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(14, 11, "TOTAL TIME:", hardwareType)
+                self.send_msg(14, 11, "TOTAL TIME:", hardwareType, False)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(14, 30, result['total_time'], hardwareType)
+                self.send_msg(14, 30, result['total_time'], hardwareType, False)
             
             self.send_display()
             self.clear_sendUID()
