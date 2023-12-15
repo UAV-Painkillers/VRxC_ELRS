@@ -36,6 +36,10 @@ class elrsBackpack(VRxController):
     _finished_pilots = []
     _queue_full = False
 
+    # last persisten message per pilot(id)
+    _last_persistent_msp_osd_message = {}
+    _activePilotIdentifier = None
+
     def __init__(self, name, label, rhapi):
         super().__init__(name, label)
         self._rhapi = rhapi
@@ -294,6 +298,7 @@ class elrsBackpack(VRxController):
         message.set_function(msptypes.MSP_ELRS_SET_SEND_UID)
         message.set_payload([1] + bindingHash)
         self.send_msp(message.get_msp())
+        self._activePilotIdentifier = bindingHash
 
     def clear_sendUID(self):
         message = msp_message()
@@ -301,8 +306,14 @@ class elrsBackpack(VRxController):
         message.set_payload([0])
         self.send_msp(message.get_msp())
 
-    def send_clear(self, hardwaretype):
+        self._activePilotIdentifier = None
+
+    def send_clear(self, hardwaretype, displayLastPersistentMessage = True):
         if hardwaretype == 'msp_osd':
+            if displayLastPersistentMessage and self._last_persistent_msp_osd_message[self._activePilotIdentifier]:
+                self.send_msg(0, 0, self._last_persistent_msp_osd_message[self._activePilotIdentifier], hardwaretype)
+                return
+
             self.send_msg(0, 0, '    ', hardwaretype)
             return
 
@@ -311,7 +322,38 @@ class elrsBackpack(VRxController):
         message.set_payload([0x02])
         self.send_msp(message.get_msp())
 
-    def send_msg(self, row, col, str, hardwaretype):
+    def send_announcement(self, str, hardwareType, persistent = False):
+        if hardwareType != 'msp_osd':
+            self.send_clear_announcement(hardwareType)
+
+        col = self.centerOSD(len(str), hardwareType)
+        self.send_msg(self._announcement_row, col, str, hardwareType, persistent)
+
+    def send_status(self, str, hardwareType, clearFullScreen = False, persistent = False):
+        if hardwareType != 'msp_osd':
+            if clearFullScreen:
+                self.send_clear(hardwareType)
+            else:
+                self.send_clear_status(hardwareType)
+
+        col = self.centerOSD(len(str), hardwareType)
+        self.send_msg(self._status_row, col, str, hardwareType)
+
+    def send_currentlap(self, str, hardwareType, persistent = False):
+        if hardwareType != 'msp_osd':
+            self.send_clear_currentlap(hardwareType)
+
+        col = self.centerOSD(len(str), hardwareType)
+        self.send_msg(self._currentlap_row, col, str, hardwareType)
+
+    def send_lapresults(self, str, hardwareType, persistent = False):
+        if hardwareType != 'msp_osd':
+            self.send_clear_lapresults(hardwareType)
+
+        col = self.centerOSD(len(str), hardwareType)
+        self.send_msg(self._lapresults_row, col, str, hardwareType)
+
+    def send_msg(self, row, col, str, hardwaretype, persistent):
         payload = [1]
         if hardwaretype != 'msp_osd':
             payload = [0x03,row,col,0]
@@ -339,15 +381,30 @@ class elrsBackpack(VRxController):
             time.sleep(1)
             self.send_msg(row, col, str[16:], hardwaretype)
 
+        if persistent:
+            self._last_persistent_msp_osd_message[self._activePilotIdentifier] = str
+
     def send_display(self):
         message = msp_message()
         message.set_function(msptypes.MSP_ELRS_SET_OSD)
         message.set_payload([0x04])
         self.send_msp(message.get_msp())
     
-    def send_clear_row(self, row, hardwaretype):
+    def send_clear_status(self, hardwareType, displayLastPersistentMessage = True):
+        self.send_clear_row(self._status_row, hardwareType, displayLastPersistentMessage)
+
+    def send_clear_announcement(self, hardwareType, displayLastPersistentMessage = True):
+        self.send_clear_row(self._announcement_row, hardwareType, displayLastPersistentMessage)
+
+    def send_clear_currentlap(self, hardwareType, displayLastPersistentMessage = True):
+        self.send_clear_row(self._currentlap_row, hardwareType, displayLastPersistentMessage)
+
+    def send_clear_lapresults(self, hardwareType, displayLastPersistentMessage = True):
+        self.send_clear_row(self._lapresults_row, hardwareType, displayLastPersistentMessage)
+
+    def send_clear_row(self, row, hardwaretype, displayLastPersistentMessage = True):
         if hardwaretype == 'msp_osd':
-            self.send_clear(hardwaretype)
+            self.send_clear(hardwaretype, displayLastPersistentMessage)
             return
         
         payload = [0x03,row,0,0]
@@ -521,15 +578,11 @@ class elrsBackpack(VRxController):
             hardwareType = self._heat_data[pilot_id]['hardware_type']
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            if hardwareType != 'msp_osd':
-                self.send_clear(hardwareType)
-            start_col1 = self.centerOSD(len(self._racestage_message), hardwareType)
-            self.send_msg(self._status_row, start_col1, self._racestage_message, hardwareType)
+            self.send_status(self._racestage_message, hardwareType, True)
             if self._heat_name and class_name and heat_name:
-                start_col2 = self.centerOSD(len(race_name), hardwareType)
                 if hardwareType == 'msp_osd':
                     time.sleep(1)
-                self.send_msg(self._announcement_row, start_col2, race_name, hardwareType)
+                self.send_announcement(race_name, hardwareType)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
@@ -545,10 +598,7 @@ class elrsBackpack(VRxController):
             hardwareType = self._heat_data[pilot_id]['hardware_type']
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            if hardwareType != 'msp_osd':
-                self.send_clear(hardwareType)
-            start_col = self.centerOSD(len(self._racestart_message), hardwareType)
-            self.send_msg(self._status_row, start_col, self._racestart_message, hardwareType)  
+            self.send_status(self._racestage_message, hardwareType, True)
             self.send_display()
             self.clear_sendUID()
             delay = copy.copy(self._racestart_uptime)
@@ -558,7 +608,7 @@ class elrsBackpack(VRxController):
 
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            self.send_clear_row(self._status_row, hardwareType)
+            self.send_clear_status(hardwareType, False)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
@@ -576,10 +626,7 @@ class elrsBackpack(VRxController):
             hardwareType = self._heat_data[pilot_id]['hardware_type']
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            if hardwareType != 'msp_osd':
-                self.send_clear_row(self._status_row, hardwareType)
-            start_col = self.centerOSD(len(self._racefinish_message), hardwareType)
-            self.send_msg(self._status_row, start_col, self._racefinish_message, hardwareType)  
+            self.send_status(self._racefinish_message, hardwareType)
             self.send_display()
             self.clear_sendUID()
             delay = copy.copy(self._finish_uptime)
@@ -589,7 +636,7 @@ class elrsBackpack(VRxController):
 
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            self.send_clear_row(self._status_row, hardwareType)
+            self.send_clear_status(hardwareType)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
@@ -604,8 +651,7 @@ class elrsBackpack(VRxController):
             hardwareType = self._heat_data[pilot_id]['hardware_type']
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            start_col = self.centerOSD(len(self._racestop_message), hardwareType)
-            self.send_msg(self._status_row, start_col, self._racestop_message, hardwareType) 
+            self.send_status(self._racestop_message, hardwareType)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
@@ -626,13 +672,9 @@ class elrsBackpack(VRxController):
                 message = f"LAP: {result['laps'] + 1}"
             else:
                 message = f"POSN: {str(result['position']).upper()} | LAP: {result['laps'] + 1}"
-            start_col = self.centerOSD(len(message), hardwareType)
 
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            if hardwareType != 'msp_osd':
-                self.send_clear_row(self._currentlap_row, hardwareType)
-            
-            self.send_msg(self._currentlap_row, start_col, message, hardwareType) 
+            self.send_currentlap(message, hardwareType, True)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
@@ -652,10 +694,9 @@ class elrsBackpack(VRxController):
                 message = f"x {formatted_callsign} | +{formatted_time} w"
             else:
                 message = self._leader_message
-            start_col = self.centerOSD(len(message), hardwareType)
         
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            self.send_msg(self._lapresults_row, start_col, message, hardwareType)
+            self.send_lapresults(message, hardwareType)
             self.send_display()
             self.clear_sendUID()
             delay = copy.copy(self._results_uptime)
@@ -665,7 +706,7 @@ class elrsBackpack(VRxController):
 
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            self.send_clear_row(self._lapresults_row, hardwareType)
+            self.send_clear_lapresults(hardwareType)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
@@ -696,7 +737,7 @@ class elrsBackpack(VRxController):
             self._queue_lock.acquire()
             if self._heat_data[pilot_id]:
                 self.set_sendUID(self._heat_data[pilot_id]['UID'])
-                self.send_clear(self._heat_data[pilot_id]['hardware_type'])
+                self.send_clear(self._heat_data[pilot_id]['hardware_type'], False)
                 self.send_display()
                 self.clear_sendUID()
             self._queue_lock.release()
@@ -714,13 +755,12 @@ class elrsBackpack(VRxController):
             self._queue_lock.acquire()
             pilot_id = result['pilot_id']
             hardwareType = self._heat_data[pilot_id]['hardware_type']
-            start_col = self.centerOSD(len(self._pilotdone_message), hardwareType)
         
             self.set_sendUID(self._heat_data[result['pilot_id']]['UID'])
             if hardwareType != 'msp_osd':
-                self.send_clear_row(self._currentlap_row, hardwareType)
-                self.send_clear_row(self._status_row, hardwareType)
-            self.send_msg(self._status_row, start_col, self._pilotdone_message, hardwareType)
+                self.send_clear_currentlap(hardwareType)
+            
+            self.send_status(self._pilotdone_message, hardwareType)
 
             if self._results_mode:
                 self.send_msg(10, 11, "PLACEMENT:", hardwareType)
@@ -761,7 +801,7 @@ class elrsBackpack(VRxController):
 
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            self.send_clear_row(self._status_row, hardwareType)
+            self.send_clear_status(hardwareType, False)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
@@ -778,7 +818,7 @@ class elrsBackpack(VRxController):
         def clear(pilot_id):
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot_id]['UID'])
-            self.send_clear(self._heat_data[pilot_id]['hardware_type'])
+            self.send_clear(self._heat_data[pilot_id]['hardware_type'], False)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
@@ -796,8 +836,7 @@ class elrsBackpack(VRxController):
             hardwareType = self._heat_data[pilot]['hardware_type']
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot]['UID'])
-            start_col = self.centerOSD(len(args['message']), hardwareType)
-            self.send_msg(self._announcement_row, start_col, str.upper(args['message']), hardwareType)
+            self.send_announcement(args['message'], hardwareType)
             self.send_display()
             self.clear_sendUID()
             delay = copy.copy(self._announcement_uptime)
@@ -807,7 +846,7 @@ class elrsBackpack(VRxController):
 
             self._queue_lock.acquire()
             self.set_sendUID(self._heat_data[pilot]['UID'])
-            self.send_clear_row(self._announcement_row, hardwareType)
+            self.send_clear_announcement(hardwareType)
             self.send_display()
             self.clear_sendUID()
             self._queue_lock.release()
