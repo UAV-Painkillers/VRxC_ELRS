@@ -320,7 +320,7 @@ class elrsBackpack(VRxController):
         # if hardwareType == msp_osd, then only upto 16 characters can be sent
         for index, char in enumerate(str):
             if hardwaretype == 'msp_osd' and index > 15:
-                logger.info("too many characters for msp_osd, breaking")
+                logger.info("too many characters for msp_osd, breaking into next line")
                 break
             payload.append(ord(char))
 
@@ -334,6 +334,10 @@ class elrsBackpack(VRxController):
         message.set_payload(payload)
         mspString = message.get_msp()
         self.send_msp(mspString)
+
+        if hardwaretype == 'msp_osd' and len(str) > 16:
+            time.sleep(1)
+            self.send_msg(row, col, str[16:], hardwaretype)
 
     def send_display(self):
         message = msp_message()

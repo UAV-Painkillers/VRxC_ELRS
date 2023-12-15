@@ -99,7 +99,7 @@ class msptypes():
     MSP_ELRS_BACKPACK_SET_OSD_ELEMENT       = 0x030C
     MSP_ELRS_BACKPACK_SET_HEAD_TRACKING     = 0x030D  # enable/disable head-tracking forwarding packets to the TX
     MSP_ELRS_BACKPACK_SET_RTC               = 0x030E
-    MSP_SET_NAME                            = 11
+    MSP_ELRS_SET_NAME                       = 0x12    # get transpilled into BF MSP_SET_NAME of Value 11 in the elrs backpack to avoid collision with MSP function MSP_ELRS_REQU_VTX_PKT
 
     # incoming, packets originating from the VRx
     MSP_ELRS_BACKPACK_SET_MODE              = 0x0380  # enable wifi/binding mode
