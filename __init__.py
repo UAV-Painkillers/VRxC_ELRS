@@ -40,15 +40,15 @@ def initialize(rhapi):
     for option in hardwareOptions:
         type_hardware.append(UIFieldSelectOption(label=option.name, value=option.value))
 
-    hardware = UIField('hardware_type', 'ELRS VRx Hardware', field_type = UIFieldType.SELECT, options = type_hardware)
+    hardware = UIField('hardware_type', 'OSD Type', field_type = UIFieldType.SELECT, options = type_hardware)
     rhapi.fields.register_pilot_attribute(hardware)
 
-    elrs_bindphrase = UIField(name = 'comm_elrs', label = 'ELRS BP Bindphrase', field_type = UIFieldType.TEXT)
+    elrs_bindphrase = UIField(name = 'comm_elrs', label = 'ELRS Bindphrase', field_type = UIFieldType.TEXT)
     rhapi.fields.register_pilot_attribute(elrs_bindphrase)
 
-    rhapi.ui.register_panel('elrs_settings', 'ELRS Backpack General Settings', 'settings', order=0)
+    rhapi.ui.register_panel('elrs_settings', 'OSD General Settings', 'settings', order=0)
 
-    rhapi.ui.register_panel('elrs_vrxc', 'ELRS Backpack OSD Settings', 'settings', order=0)
+    rhapi.ui.register_panel('elrs_vrxc', 'OSD Notification Settings', 'settings', order=0)
 
     #
     # Check Boxes

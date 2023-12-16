@@ -19,16 +19,21 @@ This is a plugin being developed for the RotorHazard timing system with the foll
 ## Requirements
 
 - RotorHazard v4.0.0+ is required to run the plugin
-- A connected device that can run the ExpressLRS Backpack
+- A connected device that can run the ExpressLRS Backpack (e.g. a ELRS RX or any ESP82xx/ESP32)
     - Connections over USB or UART will both work
 
-## Installation
-
-### Installing RH Plugin and Backpack
+## Installing RH Plugin
 
 To install, follow the instructions on the [latest release](https://github.com/i-am-grub/VRxC_ELRS/releases) of the plugin.
 
-### Installing Backpack on HDZero Goggles
+## Hardware Installation / Setup
+
+Please refer to the section that matches your Hardware.
+We recommend the use of HDZero Goggles with ELRS Backpack since it offers the most functionalities in regards to OSD handling for the plugin.
+
+All Hardware options will show all information but depending on technical restrictions information might be displayed differently (MSP-OSD for example can only show one line of text, upto 16 characters at a time while HDZero Goggles with ELRS Backpack can show an infinite amount of characters at any position / row in the OSD)
+
+### HDZero Goggles with ELRS Backpack
 
 1. Use the ExpressLRS Configurator to generate the firmware file. It is important to use the following steps to force the overwrite of the default firmware on the goggles.
     1. Open the ExpressLRS Configurator
@@ -47,6 +52,33 @@ To install, follow the instructions on the [latest release](https://github.com/i
 3. Connect your computer to the backpack's wifi and open the backpack's configuration page.
     - If you haven't used it before, the webpage is similar to the default ExpressLRS configuration page.
 4. Upload the generated file (e.g. `firmware.bin`) through the configuration page. If it show a warning about overwriting the previous firmware because it has a different name, force the overwrite.
+
+### Betaflight Craftname
+
+this uses the Betaflight Craftname to display racetimer information, therefore it is possible to use this with ANY video system that supports the Betaflight Craftname Element, including but not restricted to Walksnail, DJI V1, DJI V2, DJI O3, Analog.
+
+In order to use this, please activate the Craftname element in your betaflight Configurator and place it somewhere visible in your OSD.
+
+Since ELRS did not yet support setting the Betaflight Craftname we had to open a PR to enable this functionality. This is currently under review, therefore you need to install a "Beta" Version of ELRS on your ELRS Trasnmitter as well as on the ELRS Backpack that is connected to your ELRS Transmitter.
+
+As soon as these PR's get merged / become part of the main source code of ELRS we will update this documentation.
+
+In order to install the "beta" versions, follow the following steps:
+
+#### Update your ELRS Transmitter Firmware
+
+1. open the ExpressLRS Configurator
+2. at the very top select "GIT PULL REQUEST"
+3. select the Pull request with the following name: "Transmit Betaflight MSP "SET_NAME" packets from tx to fc #2504"
+4. configure and flash your elrs transmitter as usual (Wifi or Cable, everything as usual ^^)
+
+#### Update your ELRS Transmitter Backpack Firmware
+
+1. open the ExpressLRS Configurator
+2. on the left, select the tab called "Backpack"
+3. at the very top select "GIT PULL REQUEST"
+4. select the Pull request with the following name: "Passthrough for Betaflight MSP SET_NAME commands #123"
+5. configure and flash your elrs transmitters backpack as usual (Wifi or Cable, everything as usual ^^)
 
 ## Control the Race from the Race Director's Transmitter
 

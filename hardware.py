@@ -7,13 +7,13 @@ from enum import Enum
 class hardwareOptions(Enum):
     NONE = 'none'
     HDZERO = 'hdzero'
-    MSP_OSD = 'msp_osd'
+    BETAFLIGHT_CRAFTNAME = 'betaflight_craftname'
 
 HARDWARE_SETTINGS = {
     'hdzero' : {
         'column_size'   : 18,
         'row_size'      : 50,
     },
-    'msp_osd' : {}
+    'betaflight_craftname' : {}
 }
 
